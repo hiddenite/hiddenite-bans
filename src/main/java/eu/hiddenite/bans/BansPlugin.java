@@ -257,7 +257,7 @@ public class BansPlugin extends Plugin implements Listener {
         final String bansTable = config.getString("mysql.tables.bans");
         try (PreparedStatement ps = database.prepareStatement("UPDATE " + bansTable +
                 " SET expiration_date = NOW()" +
-                " WHERE player_id = ? AND expiration_date IS NULL OR expiration_date > NOW()")) {
+                " WHERE player_id = ? AND (expiration_date IS NULL OR expiration_date > NOW())")) {
             ps.setString(1, playerId.toString());
             ps.executeUpdate();
         }
