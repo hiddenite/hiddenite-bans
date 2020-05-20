@@ -1,0 +1,4 @@
+name: HiddeniteBans
+main: eu.hiddenite.bans.BansPlugin
+version: 1.0.0
+author: Hiddenite

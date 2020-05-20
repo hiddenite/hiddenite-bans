@@ -1,0 +1,40 @@
+mysql:
+  host: "127.0.0.1"
+  user: "root"
+  password: ""
+  database: "my_server"
+  tables:
+    players: "players"
+    bans: "bans"
+  fields:
+    players:
+      id: "id"
+      name: "username"
+ban-message:
+  header: "§6You were banned from the server by §c{MODERATOR}§6:\n§6Reason: §c{REASON}"
+  permanent: "§6This ban is §cpermanent§6."
+  temporary: "§6This ban expires the §c{UNTIL}§6\n§r(remaining: {REMAINING})"
+  footer: "§6Please join our discord server if you wish to appeal."
+  until-format: "yyyy-MM-dd [at] HH:mm:ss"
+  remaining:
+    day: " day"
+    hour: " hour"
+    minute: " minute"
+    second: " second"
+    separator: ", "
+    last-separator: " and "
+  console-username: "an admin"
+command-messages:
+  date-format: "yyyy-MM-dd HH:mm:ss"
+  kick-usage: "§c/kick <player> <message>"
+  kick-success: "§6You kicked §c{PLAYER}§6."
+  ban-usage: "§c/ban <player> <duration> <message>"
+  unban-usage: "§c/unban <player>"
+  ban-success: "§6You banned §c{PLAYER}§6 until §c{DATE}§6."
+  unban-success: "§6You unbanned §c{PLAYER}§6."
+  error-player-not-found: "§cThe player {PLAYER} doesn't exist."
+  error-player-not-online: "§cThe player {PLAYER} isn't online."
+  error-already-banned: "§cThe player {PLAYER} is already banned."
+  error-not-banned: "§cThe player {PLAYER} isn't banned."
+  error-invalid-duration: "§cThe duration {DURATION} is invalid."
+  error-database: "§cAn unexpected error occurred."
