@@ -1,8 +1,10 @@
 package eu.hiddenite.bans;
 
+import com.google.gson.Gson;
 import eu.hiddenite.bans.commands.BanCommand;
 import eu.hiddenite.bans.commands.KickCommand;
 import eu.hiddenite.bans.commands.UnbanCommand;
+import eu.hiddenite.bans.helpers.HttpHelper;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.event.LoginEvent;
@@ -13,9 +15,7 @@ import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 import net.md_5.bungee.event.EventHandler;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,6 +28,11 @@ import java.util.UUID;
 public class BansPlugin extends Plugin implements Listener {
     private Configuration config;
     private DatabaseManager database;
+
+    public static class ScoreApiResult {
+        public boolean success;
+        public int score;
+    }
 
     @Override
     public void onEnable() {
@@ -96,6 +101,8 @@ public class BansPlugin extends Plugin implements Listener {
         String banReason = null;
         String moderatorName = null;
 
+        UUID playerId = event.getConnection().getUniqueId();
+
         try {
             String bansTable = config.getString("mysql.tables.bans");
             String playersTable = "`" + config.getString("mysql.tables.players") + "`";
@@ -109,7 +116,7 @@ public class BansPlugin extends Plugin implements Listener {
                     " ON mod_id = " + playerIdField +
                     " WHERE player_id = ? AND (expiration_date IS NULL OR expiration_date > NOW())" +
                     " LIMIT 1")) {
-                ps.setString(1, event.getConnection().getUniqueId().toString());
+                ps.setString(1, playerId.toString());
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         isBanned = true;
@@ -127,7 +134,26 @@ public class BansPlugin extends Plugin implements Listener {
             getLogger().info("Login from " + event.getConnection().getName() + " rejected: " + banReason);
             event.setCancelled(true);
             event.setCancelReason(generateBanMessage(banReason, moderatorName, expirationDate));
+            return;
         }
+
+        if (!config.getBoolean("suspicious-score.enabled")) {
+            return;
+        }
+
+        event.registerIntent(this);
+        getProxy().getScheduler().runAsync(this, () -> {
+            String httpResult = HttpHelper.get("https://api.hiddenite.eu/score/" + playerId.toString());
+            if (httpResult != null) {
+                ScoreApiResult result = new Gson().fromJson(httpResult, ScoreApiResult.class);
+                if (result != null && result.success && result.score >= config.getInt("suspicious-score.score")) {
+                    getLogger().info("Login from " + playerId + " rejected: score is " + result.score);
+                    event.setCancelled(true);
+                    event.setCancelReason(TextComponent.fromLegacyText(config.getString("suspicious-score.message")));
+                }
+            }
+            event.completeIntent(this);
+        });
     }
 
     public BaseComponent[] generateBanMessage(String reason, String moderatorName, Timestamp expirationDate) {

@@ -24,6 +24,10 @@ ban-message:
     separator: ", "
     last-separator: " and "
   console-username: "an admin"
+suspicious-score:
+  enabled: true
+  score: 6
+  message: "§6For security reasons, this account is not allowed to login on this server."
 command-messages:
   date-format: "yyyy-MM-dd HH:mm:ss"
   kick-usage: "§c/kick <player> <message>"
