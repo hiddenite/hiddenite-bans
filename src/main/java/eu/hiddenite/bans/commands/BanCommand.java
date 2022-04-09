@@ -36,6 +36,17 @@ public class BanCommand extends Command implements TabExecutor {
             return;
         }
 
+        String reason = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
+        if (reason.isEmpty()) {
+            String defaultReason = plugin.getConfig().getString("default-reasons.ban");
+            if (defaultReason == null || defaultReason.isEmpty()) {
+                String error = plugin.getConfig().getString("command-messages.error-missing-reason");
+                sender.sendMessage(TextComponent.fromLegacyText(error));
+                return;
+            }
+            reason = defaultReason;
+        }
+
         BansPlugin.OfflinePlayerInfo targetInfo = plugin.getOfflinePlayer(args[0]);
         if (targetInfo == null) {
             String error = plugin.getConfig().getString("command-messages.error-player-not-found");
@@ -66,11 +77,6 @@ public class BanCommand extends Command implements TabExecutor {
             error = error.replace("{PLAYER}", targetInfo.name);
             sender.sendMessage(TextComponent.fromLegacyText(error));
             return;
-        }
-
-        String reason = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
-        if (reason.isEmpty()) {
-            reason = plugin.getConfig().getString("default-reasons.ban");
         }
 
         UUID moderatorId = sender instanceof ProxiedPlayer ? ((ProxiedPlayer)sender).getUniqueId() : null;

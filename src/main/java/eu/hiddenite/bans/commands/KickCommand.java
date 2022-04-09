@@ -27,17 +27,23 @@ public class KickCommand extends Command implements TabExecutor {
             return;
         }
 
+        String reason = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        if (reason.isEmpty()) {
+            String defaultReason = plugin.getConfig().getString("default-reasons.kick");
+            if (defaultReason == null || defaultReason.isEmpty()) {
+                String error = plugin.getConfig().getString("command-messages.error-missing-reason");
+                sender.sendMessage(TextComponent.fromLegacyText(error));
+                return;
+            }
+            reason = defaultReason;
+        }
+
         ProxiedPlayer target = ProxyServer.getInstance().getPlayer(args[0]);
         if (target == null) {
             String error = plugin.getConfig().getString("command-messages.error-player-not-online");
             error = error.replace("{PLAYER}", args[0]);
             sender.sendMessage(TextComponent.fromLegacyText(error));
             return;
-        }
-
-        String reason = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
-        if (reason.isEmpty()) {
-            reason = plugin.getConfig().getString("default-reasons.kick");
         }
 
         target.disconnect(new TextComponent(reason));

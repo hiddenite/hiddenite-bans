@@ -24,7 +24,6 @@ import java.sql.Timestamp;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.UUID;
-import java.util.logging.Logger;
 
 public class BansPlugin extends Plugin implements Listener {
     private Configuration config;
@@ -43,7 +42,7 @@ public class BansPlugin extends Plugin implements Listener {
         }
 
         if (config.getBoolean("discord.enabled")) {
-            webhook = new WebhookManager(config, getLogger());
+            webhook = new WebhookManager(this);
         }
 
         database = new DatabaseManager(config, getLogger());
