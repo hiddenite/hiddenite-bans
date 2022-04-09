@@ -24,10 +24,12 @@ import java.sql.Timestamp;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 public class BansPlugin extends Plugin implements Listener {
     private Configuration config;
     private DatabaseManager database;
+    private WebhookManager webhook;
 
     public static class ScoreApiResult {
         public boolean success;
@@ -38,6 +40,10 @@ public class BansPlugin extends Plugin implements Listener {
     public void onEnable() {
         if (!loadConfiguration()) {
             return;
+        }
+
+        if (config.getBoolean("discord.enabled")) {
+            webhook = new WebhookManager(config, getLogger());
         }
 
         database = new DatabaseManager(config, getLogger());
@@ -60,6 +66,10 @@ public class BansPlugin extends Plugin implements Listener {
 
     public Configuration getConfig() {
         return config;
+    }
+
+    public WebhookManager getWebhook() {
+        return webhook;
     }
 
     private boolean loadConfiguration() {

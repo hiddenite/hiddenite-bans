@@ -30,7 +30,7 @@ public class BanCommand extends Command implements TabExecutor {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        if (args.length < 3) {
+        if (args.length < 2) {
             String usage = plugin.getConfig().getString("command-messages.ban-usage");
             sender.sendMessage(TextComponent.fromLegacyText(usage));
             return;
@@ -69,6 +69,9 @@ public class BanCommand extends Command implements TabExecutor {
         }
 
         String reason = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
+        if (reason.isEmpty()) {
+            reason = plugin.getConfig().getString("default-reasons.ban");
+        }
 
         UUID moderatorId = sender instanceof ProxiedPlayer ? ((ProxiedPlayer)sender).getUniqueId() : null;
         try {
@@ -89,6 +92,13 @@ public class BanCommand extends Command implements TabExecutor {
         if (targetPlayer != null) {
             String moderatorName = sender instanceof ProxiedPlayer ? sender.getName() : null;
             targetPlayer.disconnect(plugin.generateBanMessage(reason, moderatorName, untilDate));
+        }
+
+        if (plugin.getWebhook() != null) {
+            int banColor = plugin.getConfig().getInt("discord.punishments.ban.color");
+            String banDisplay = plugin.getConfig().getString("discord.punishments.ban.display").replace("{TIME}", args[1]);
+            String moderatorName = sender instanceof ProxiedPlayer ? sender.getName() : plugin.getConfig().getString("ban-message.console-username");
+            plugin.getWebhook().sendMessage(banColor, targetInfo.name, targetInfo.uniqueId.toString(), banDisplay, reason, moderatorName);
         }
     }
 
