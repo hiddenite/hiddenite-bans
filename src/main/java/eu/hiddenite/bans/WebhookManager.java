@@ -63,26 +63,24 @@ public class WebhookManager {
 
     public class WebhookEmbed {
         private final int color;
-        private final List<WebhookField> fields = new ArrayList<>();
+        private String description = "";
 
         public WebhookEmbed(int embedColor, String playerName, String playerUUID, String punishmentType, String reason, String moderator) {
             this.color = embedColor;
-            fields.add(new WebhookField(plugin.getConfig().getString("discord.strings.player-name"), playerName));
-            fields.add(new WebhookField(plugin.getConfig().getString("discord.strings.player-uuid"), playerUUID));
-            fields.add(new WebhookField(plugin.getConfig().getString("discord.strings.punishment-type"), punishmentType));
-            fields.add(new WebhookField(plugin.getConfig().getString("discord.strings.reason"), reason));
-            fields.add(new WebhookField(plugin.getConfig().getString("discord.strings.moderator"), moderator));
+            description += createLine(plugin.getConfig().getString("discord.strings.player-name"), playerName);
+            description += createLine(plugin.getConfig().getString("discord.strings.player-uuid"), playerUUID);
+            description += createLine(plugin.getConfig().getString("discord.strings.punishment-type"), punishmentType);
+            description += createLine(plugin.getConfig().getString("discord.strings.reason"), reason);
+            description += createLine(plugin.getConfig().getString("discord.strings.moderator"), moderator);
         }
     }
 
-    public static class WebhookField {
-        private final String name;
-        private final String value;
+    private static String createLine(String name, String value) {
+        return bold(name) + " " + value + "\n";
+    }
 
-        public WebhookField(String name, String value) {
-            this.name = name;
-            this.value = value;
-        }
+    private static String bold(String string) {
+        return "**" + string + "**";
     }
 
 }
