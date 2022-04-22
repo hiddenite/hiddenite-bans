@@ -21,10 +21,21 @@ public class KickCommand extends Command implements TabExecutor {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        if (args.length < 2) {
+        if (args.length < 1) {
             String usage = plugin.getConfig().getString("command-messages.kick-usage");
             sender.sendMessage(TextComponent.fromLegacyText(usage));
             return;
+        }
+
+        String reason = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        if (reason.isEmpty()) {
+            String defaultReason = plugin.getConfig().getString("default-reasons.kick");
+            if (defaultReason == null || defaultReason.isEmpty()) {
+                String error = plugin.getConfig().getString("command-messages.error-missing-reason");
+                sender.sendMessage(TextComponent.fromLegacyText(error));
+                return;
+            }
+            reason = defaultReason;
         }
 
         ProxiedPlayer target = ProxyServer.getInstance().getPlayer(args[0]);
@@ -35,12 +46,18 @@ public class KickCommand extends Command implements TabExecutor {
             return;
         }
 
-        String reason = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
         target.disconnect(new TextComponent(reason));
 
         String successMessage = plugin.getConfig().getString("command-messages.kick-success");
         successMessage = successMessage.replace("{PLAYER}", target.getName());
         sender.sendMessage(TextComponent.fromLegacyText(successMessage));
+
+        if (plugin.getWebhook() != null) {
+            int kickColor = plugin.getConfig().getInt("discord.punishments.kick.color");
+            String kickDisplay = plugin.getConfig().getString("discord.punishments.kick.display");
+            String moderatorName = sender instanceof ProxiedPlayer ? sender.getName() : plugin.getConfig().getString("ban-message.console-username");
+            plugin.getWebhook().sendMessage(kickColor, target.getName(), target.getUniqueId().toString(), kickDisplay, reason, moderatorName);
+        }
     }
 
     @Override

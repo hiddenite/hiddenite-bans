@@ -28,6 +28,7 @@ import java.util.UUID;
 public class BansPlugin extends Plugin implements Listener {
     private Configuration config;
     private DatabaseManager database;
+    private WebhookManager webhook;
 
     public static class ScoreApiResult {
         public boolean success;
@@ -38,6 +39,10 @@ public class BansPlugin extends Plugin implements Listener {
     public void onEnable() {
         if (!loadConfiguration()) {
             return;
+        }
+
+        if (config.getBoolean("discord.enabled")) {
+            webhook = new WebhookManager(this);
         }
 
         database = new DatabaseManager(config, getLogger());
@@ -60,6 +65,10 @@ public class BansPlugin extends Plugin implements Listener {
 
     public Configuration getConfig() {
         return config;
+    }
+
+    public WebhookManager getWebhook() {
+        return webhook;
     }
 
     private boolean loadConfiguration() {

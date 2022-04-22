@@ -30,10 +30,21 @@ public class BanCommand extends Command implements TabExecutor {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        if (args.length < 3) {
+        if (args.length < 2) {
             String usage = plugin.getConfig().getString("command-messages.ban-usage");
             sender.sendMessage(TextComponent.fromLegacyText(usage));
             return;
+        }
+
+        String reason = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
+        if (reason.isEmpty()) {
+            String defaultReason = plugin.getConfig().getString("default-reasons.ban");
+            if (defaultReason == null || defaultReason.isEmpty()) {
+                String error = plugin.getConfig().getString("command-messages.error-missing-reason");
+                sender.sendMessage(TextComponent.fromLegacyText(error));
+                return;
+            }
+            reason = defaultReason;
         }
 
         BansPlugin.OfflinePlayerInfo targetInfo = plugin.getOfflinePlayer(args[0]);
@@ -68,8 +79,6 @@ public class BanCommand extends Command implements TabExecutor {
             return;
         }
 
-        String reason = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
-
         UUID moderatorId = sender instanceof ProxiedPlayer ? ((ProxiedPlayer)sender).getUniqueId() : null;
         try {
             plugin.banPlayer(targetInfo.uniqueId, moderatorId, untilDate, reason);
@@ -89,6 +98,13 @@ public class BanCommand extends Command implements TabExecutor {
         if (targetPlayer != null) {
             String moderatorName = sender instanceof ProxiedPlayer ? sender.getName() : null;
             targetPlayer.disconnect(plugin.generateBanMessage(reason, moderatorName, untilDate));
+        }
+
+        if (plugin.getWebhook() != null) {
+            int banColor = plugin.getConfig().getInt("discord.punishments.ban.color");
+            String banDisplay = plugin.getConfig().getString("discord.punishments.ban.display").replace("{TIME}", args[1]);
+            String moderatorName = sender instanceof ProxiedPlayer ? sender.getName() : plugin.getConfig().getString("ban-message.console-username");
+            plugin.getWebhook().sendMessage(banColor, targetInfo.name, targetInfo.uniqueId.toString(), banDisplay, reason, moderatorName);
         }
     }
 

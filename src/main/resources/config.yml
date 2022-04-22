@@ -24,16 +24,12 @@ ban-message:
     separator: ", "
     last-separator: " and "
   console-username: "an admin"
-suspicious-score:
-  enabled: true
-  score: 6
-  message: "§6For security reasons, this account is not allowed to login on this server."
 command-messages:
   date-format: "yyyy-MM-dd HH:mm:ss"
-  kick-usage: "§c/kick <player> <message>"
+  kick-usage: "§c/kick <player> [reason]"
+  ban-usage: "§c/ban <player> <duration> [reason]"
+  unban-usage: "§c/unban <player> [reason]"
   kick-success: "§6You kicked §c{PLAYER}§6."
-  ban-usage: "§c/ban <player> <duration> <message>"
-  unban-usage: "§c/unban <player>"
   ban-success: "§6You banned §c{PLAYER}§6 until §c{DATE}§6."
   unban-success: "§6You unbanned §c{PLAYER}§6."
   error-player-not-found: "§cThe player {PLAYER} doesn't exist."
@@ -41,4 +37,32 @@ command-messages:
   error-already-banned: "§cThe player {PLAYER} is already banned."
   error-not-banned: "§cThe player {PLAYER} isn't banned."
   error-invalid-duration: "§cThe duration {DURATION} is invalid."
+  error-missing-reason: "§cYou must enter a reason for this command."
   error-database: "§cAn unexpected error occurred."
+default-reasons:
+  kick: "Please go out!"
+  ban: "Please go out for a while."
+  unban: "You can come back!"
+suspicious-score:
+  enabled: true
+  score: 6
+  message: "§6For security reasons, this account is not allowed to login on this server."
+discord:
+  enabled: false
+  webhook-url: "https://discord.com/api/webhooks/xxx/xxxxx"
+  punishments:
+    ban:
+      color: 16646154
+      display: "Ban ({TIME})"
+    unban:
+      color: 65050
+      display: "Unban"
+    kick:
+      color: 16683264
+      display: "Kick"
+  strings:
+    player-name: "Nickname:"
+    player-uuid: "UUID:"
+    punishment-type: "Punishment:"
+    reason: "Reason:"
+    moderator: "Moderator:"
