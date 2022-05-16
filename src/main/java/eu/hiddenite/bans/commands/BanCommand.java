@@ -65,7 +65,7 @@ public class BanCommand extends Command implements TabExecutor {
 
         boolean alreadyBanned;
         try {
-            alreadyBanned = plugin.isPlayerBanned(targetInfo.uniqueId);
+            alreadyBanned = plugin.isPlayerBanned(targetInfo.uniqueId());
         } catch (SQLException e) {
             String error = plugin.getConfig().getString("command-messages.error-database");
             sender.sendMessage(TextComponent.fromLegacyText(error));
@@ -74,14 +74,14 @@ public class BanCommand extends Command implements TabExecutor {
         }
         if (alreadyBanned) {
             String error = plugin.getConfig().getString("command-messages.error-already-banned");
-            error = error.replace("{PLAYER}", targetInfo.name);
+            error = error.replace("{PLAYER}", targetInfo.name());
             sender.sendMessage(TextComponent.fromLegacyText(error));
             return;
         }
 
         UUID moderatorId = sender instanceof ProxiedPlayer ? ((ProxiedPlayer)sender).getUniqueId() : null;
         try {
-            plugin.banPlayer(targetInfo.uniqueId, moderatorId, untilDate, reason);
+            plugin.banPlayer(targetInfo.uniqueId(), moderatorId, untilDate, reason);
         } catch (SQLException e) {
             String error = plugin.getConfig().getString("command-messages.error-database");
             sender.sendMessage(TextComponent.fromLegacyText(error));
@@ -90,11 +90,11 @@ public class BanCommand extends Command implements TabExecutor {
         }
 
         String successMessage = plugin.getConfig().getString("command-messages.ban-success");
-        successMessage = successMessage.replace("{PLAYER}", targetInfo.name);
+        successMessage = successMessage.replace("{PLAYER}", targetInfo.name());
         successMessage = successMessage.replace("{DATE}", dateFormat.format(untilDate));
         sender.sendMessage(TextComponent.fromLegacyText(successMessage));
 
-        ProxiedPlayer targetPlayer = ProxyServer.getInstance().getPlayer(targetInfo.uniqueId);
+        ProxiedPlayer targetPlayer = ProxyServer.getInstance().getPlayer(targetInfo.uniqueId());
         if (targetPlayer != null) {
             String moderatorName = sender instanceof ProxiedPlayer ? sender.getName() : null;
             targetPlayer.disconnect(plugin.generateBanMessage(reason, moderatorName, untilDate));
@@ -104,7 +104,7 @@ public class BanCommand extends Command implements TabExecutor {
             int banColor = plugin.getConfig().getInt("discord.punishments.ban.color");
             String banDisplay = plugin.getConfig().getString("discord.punishments.ban.display").replace("{TIME}", args[1]);
             String moderatorName = sender instanceof ProxiedPlayer ? sender.getName() : plugin.getConfig().getString("ban-message.console-username");
-            plugin.getWebhook().sendMessage(banColor, targetInfo.name, targetInfo.uniqueId.toString(), banDisplay, reason, moderatorName);
+            plugin.getWebhook().sendMessage(banColor, targetInfo.name(), targetInfo.uniqueId().toString(), banDisplay, reason, moderatorName);
         }
     }
 

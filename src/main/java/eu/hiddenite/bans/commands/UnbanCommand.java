@@ -48,7 +48,7 @@ public class UnbanCommand extends Command implements TabExecutor {
 
         boolean alreadyBanned;
         try {
-            alreadyBanned = plugin.isPlayerBanned(targetInfo.uniqueId);
+            alreadyBanned = plugin.isPlayerBanned(targetInfo.uniqueId());
         } catch (SQLException e) {
             String error = plugin.getConfig().getString("command-messages.error-database");
             sender.sendMessage(TextComponent.fromLegacyText(error));
@@ -57,13 +57,13 @@ public class UnbanCommand extends Command implements TabExecutor {
         }
         if (!alreadyBanned) {
             String error = plugin.getConfig().getString("command-messages.error-not-banned");
-            error = error.replace("{PLAYER}", targetInfo.name);
+            error = error.replace("{PLAYER}", targetInfo.name());
             sender.sendMessage(TextComponent.fromLegacyText(error));
             return;
         }
 
         try {
-            plugin.unbanPlayer(targetInfo.uniqueId);
+            plugin.unbanPlayer(targetInfo.uniqueId());
         } catch (SQLException e) {
             String error = plugin.getConfig().getString("command-messages.error-database");
             sender.sendMessage(TextComponent.fromLegacyText(error));
@@ -72,14 +72,14 @@ public class UnbanCommand extends Command implements TabExecutor {
         }
 
         String successMessage = plugin.getConfig().getString("command-messages.unban-success");
-        successMessage = successMessage.replace("{PLAYER}", targetInfo.name);
+        successMessage = successMessage.replace("{PLAYER}", targetInfo.name());
         sender.sendMessage(TextComponent.fromLegacyText(successMessage));
 
         if (plugin.getWebhook() != null) {
             int unbanColor = plugin.getConfig().getInt("discord.punishments.unban.color");
             String unbanDisplay = plugin.getConfig().getString("discord.punishments.unban.display");
             String moderatorName = sender instanceof ProxiedPlayer ? sender.getName() : plugin.getConfig().getString("ban-message.console-username");
-            plugin.getWebhook().sendMessage(unbanColor, targetInfo.name, targetInfo.uniqueId.toString(), unbanDisplay, reason, moderatorName);
+            plugin.getWebhook().sendMessage(unbanColor, targetInfo.name(), targetInfo.uniqueId().toString(), unbanDisplay, reason, moderatorName);
         }
     }
 

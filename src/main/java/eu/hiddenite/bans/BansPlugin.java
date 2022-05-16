@@ -211,15 +211,7 @@ public class BansPlugin extends Plugin implements Listener {
         return sb.toString();
     }
 
-    public static class OfflinePlayerInfo {
-        public UUID uniqueId;
-        public String name;
-
-        private OfflinePlayerInfo(UUID uniqueId, String name) {
-            this.uniqueId = uniqueId;
-            this.name = name;
-        }
-    }
+    public record OfflinePlayerInfo(UUID uniqueId, String name) {}
 
     public OfflinePlayerInfo getOfflinePlayer(String username) {
         String playersTable = "`" + config.getString("mysql.tables.players") + "`";
