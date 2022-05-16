@@ -43,10 +43,6 @@ default-reasons:
   kick: "Please go out!"
   ban: "Please go out for a while."
   unban: "You can come back!"
-suspicious-score:
-  enabled: true
-  score: 6
-  message: "§6For security reasons, this account is not allowed to login on this server."
 discord:
   enabled: false
   webhook-url: "https://discord.com/api/webhooks/xxx/xxxxx"

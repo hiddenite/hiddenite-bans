@@ -145,24 +145,6 @@ public class BansPlugin extends Plugin implements Listener {
             event.setCancelReason(generateBanMessage(banReason, moderatorName, expirationDate));
             return;
         }
-
-        if (!config.getBoolean("suspicious-score.enabled")) {
-            return;
-        }
-
-        event.registerIntent(this);
-        getProxy().getScheduler().runAsync(this, () -> {
-            String httpResult = HttpHelper.get("https://api.hiddenite.eu/score/" + playerId.toString());
-            if (httpResult != null) {
-                ScoreApiResult result = new Gson().fromJson(httpResult, ScoreApiResult.class);
-                if (result != null && result.success && result.score >= config.getInt("suspicious-score.score")) {
-                    getLogger().info("Login from " + playerId + " rejected: score is " + result.score);
-                    event.setCancelled(true);
-                    event.setCancelReason(TextComponent.fromLegacyText(config.getString("suspicious-score.message")));
-                }
-            }
-            event.completeIntent(this);
-        });
     }
 
     public BaseComponent[] generateBanMessage(String reason, String moderatorName, Timestamp expirationDate) {
