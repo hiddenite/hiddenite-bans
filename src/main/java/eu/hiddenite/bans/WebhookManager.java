@@ -67,11 +67,11 @@ public class WebhookManager {
 
         public WebhookEmbed(int embedColor, String playerName, String playerUUID, String punishmentType, String reason, String moderator) {
             this.color = embedColor;
-            description += createLine(plugin.getConfig().getString("discord.strings.player-name"), playerName);
-            description += createLine(plugin.getConfig().getString("discord.strings.player-uuid"), playerUUID);
+            description += createLine(plugin.getConfig().getString("discord.strings.player-name"), raw(playerName));
+            description += createLine(plugin.getConfig().getString("discord.strings.player-uuid"), raw(playerUUID));
             description += createLine(plugin.getConfig().getString("discord.strings.punishment-type"), punishmentType);
             description += createLine(plugin.getConfig().getString("discord.strings.reason"), reason);
-            description += createLine(plugin.getConfig().getString("discord.strings.moderator"), moderator);
+            description += createLine(plugin.getConfig().getString("discord.strings.moderator"), raw(moderator));
         }
     }
 
@@ -81,6 +81,10 @@ public class WebhookManager {
 
     private static String bold(String string) {
         return "**" + string + "**";
+    }
+
+    private static String raw(String string) {
+        return "`" + string + "`";
     }
 
 }
