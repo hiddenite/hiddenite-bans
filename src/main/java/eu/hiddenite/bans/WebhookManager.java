@@ -24,26 +24,25 @@ public class WebhookManager {
     }
 
     public void send(String json) {
-        // Removed asynchronous run on Velocity
-        //plugin.getProxy().getScheduler().runAsync(plugin, () -> {
-        try {
-            HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.addRequestProperty("Content-Type", "application/json");
-            connection.setDoOutput(true);
+        plugin.getProxy().getScheduler().buildTask(plugin, (selfTask) -> {
+            try {
+                HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.addRequestProperty("Content-Type", "application/json");
+                connection.setDoOutput(true);
 
-            OutputStream stream = connection.getOutputStream();
-            stream.write(json.getBytes(StandardCharsets.UTF_8));
-            stream.flush();
-            stream.close();
+                OutputStream stream = connection.getOutputStream();
+                stream.write(json.getBytes(StandardCharsets.UTF_8));
+                stream.flush();
+                stream.close();
 
-            connection.getInputStream().close();
-            connection.disconnect();
-        } catch (Exception exception) {
-            plugin.getLogger().warn("Could not send data to webhook.");
-            exception.printStackTrace();
-        }
-        //});
+                connection.getInputStream().close();
+                connection.disconnect();
+            } catch (Exception exception) {
+                plugin.getLogger().warn("Could not send data to webhook.");
+                exception.printStackTrace();
+            }
+        }).schedule();
     }
 
     public void sendMessage(int embedColor, String playerName, String playerUUID, String punishmentType, String reason, String moderator) {
