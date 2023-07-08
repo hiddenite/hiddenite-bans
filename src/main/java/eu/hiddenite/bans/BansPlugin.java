@@ -156,14 +156,6 @@ public class BansPlugin {
             String playerIdField = playersTable + "." + config.mysql.fields.players.id;
             String playerNameField =  playersTable + "." + config.mysql.fields.players.name;
 
-            logger.warn("SELECT expiration_date, reason" +
-                    ", " + playerNameField +
-                    " FROM " + bansTable +
-                    " LEFT JOIN " + playersTable +
-                    " ON mod_id = " + playerIdField +
-                    " WHERE player_id = ? AND (expiration_date IS NULL OR expiration_date > NOW())" +
-                    " LIMIT 1");
-
             try (PreparedStatement ps = database.prepareStatement("SELECT expiration_date, reason" +
                     ", " + playerNameField +
                     " FROM " + bansTable +
