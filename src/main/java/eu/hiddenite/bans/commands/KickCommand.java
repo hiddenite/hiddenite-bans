@@ -1,70 +1,80 @@
 package eu.hiddenite.bans.commands;
 
+import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.command.SimpleCommand;
+import com.velocitypowered.api.proxy.Player;
 import eu.hiddenite.bans.BansPlugin;
 import eu.hiddenite.bans.helpers.TabCompleteHelper;
-import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.ProxyServer;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.plugin.Command;
-import net.md_5.bungee.api.plugin.TabExecutor;
+import net.kyori.adventure.text.Component;
 
 import java.util.Arrays;
+import java.util.List;
 
-public class KickCommand extends Command implements TabExecutor {
+public class KickCommand implements SimpleCommand {
     private final BansPlugin plugin;
 
     public KickCommand(BansPlugin plugin) {
-        super("kick", "hiddenite.kick");
         this.plugin = plugin;
     }
 
     @Override
-    public void execute(CommandSender sender, String[] args) {
+    public void execute(final Invocation invocation) {
+        CommandSource source = invocation.source();
+        String[] args = invocation.arguments();
+
         if (args.length < 1) {
-            String usage = plugin.getConfig().getString("command-messages.kick-usage");
-            sender.sendMessage(TextComponent.fromLegacyText(usage));
+            String usage = plugin.getConfig().commandMessages.kickUsage;
+            source.sendMessage(Component.text(usage));
             return;
         }
 
         String reason = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
         if (reason.isEmpty()) {
-            String defaultReason = plugin.getConfig().getString("default-reasons.kick");
+            String defaultReason = plugin.getConfig().defaultReasons.kick;
             if (defaultReason == null || defaultReason.isEmpty()) {
-                String error = plugin.getConfig().getString("command-messages.error-missing-reason");
-                sender.sendMessage(TextComponent.fromLegacyText(error));
+                String error = plugin.getConfig().commandMessages.errorMissingReason;
+                source.sendMessage(Component.text(error));
                 return;
             }
             reason = defaultReason;
         }
 
-        ProxiedPlayer target = ProxyServer.getInstance().getPlayer(args[0]);
-        if (target == null) {
-            String error = plugin.getConfig().getString("command-messages.error-player-not-online");
+        if (!plugin.getProxy().getPlayer(args[0]).isPresent()) {
+            String error = plugin.getConfig().commandMessages.errorPlayerNotOnline;
             error = error.replace("{PLAYER}", args[0]);
-            sender.sendMessage(TextComponent.fromLegacyText(error));
+            source.sendMessage(Component.text(error));
             return;
         }
 
-        target.disconnect(new TextComponent(reason));
+        Player target = plugin.getProxy().getPlayer(args[0]).get();
 
-        String successMessage = plugin.getConfig().getString("command-messages.kick-success");
-        successMessage = successMessage.replace("{PLAYER}", target.getName());
-        sender.sendMessage(TextComponent.fromLegacyText(successMessage));
+        target.disconnect(Component.text(reason));
+
+        String successMessage = plugin.getConfig().commandMessages.kickSuccess;
+        successMessage = successMessage.replace("{PLAYER}", target.getUsername());
+        source.sendMessage(Component.text(successMessage));
 
         if (plugin.getWebhook() != null) {
-            int kickColor = plugin.getConfig().getInt("discord.punishments.kick.color");
-            String kickDisplay = plugin.getConfig().getString("discord.punishments.kick.display");
-            String moderatorName = sender instanceof ProxiedPlayer ? sender.getName() : plugin.getConfig().getString("ban-message.console-username");
-            plugin.getWebhook().sendMessage(kickColor, target.getName(), target.getUniqueId().toString(), kickDisplay, reason, moderatorName);
+            int kickColor = plugin.getConfig().discord.punishments.kick.color;
+            String kickDisplay = plugin.getConfig().discord.punishments.kick.display;
+            String moderatorName = source instanceof Player player ? player.getUsername() : plugin.getConfig().banMessage.consoleUsername;
+            plugin.getWebhook().sendMessage(kickColor, target.getUsername(), target.getUniqueId().toString(), kickDisplay, reason, moderatorName);
         }
     }
 
     @Override
-    public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+    public boolean hasPermission(final Invocation invocation) {
+        return invocation.source().hasPermission("hiddenite.kick");
+    }
+
+    @Override
+    public List<String> suggest(final Invocation invocation) {
+        String[] args = invocation.arguments();
         if (args.length == 1) {
             return TabCompleteHelper.matchPlayer(args[0]);
         }
+
         return TabCompleteHelper.empty();
     }
+
 }

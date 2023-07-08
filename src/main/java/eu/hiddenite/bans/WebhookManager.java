@@ -17,32 +17,33 @@ public class WebhookManager {
     public WebhookManager(BansPlugin plugin) {
         this.plugin = plugin;
         try {
-            this.url = new URL(plugin.getConfig().getString("discord.webhook-url"));
+            this.url = new URL(plugin.getConfig().discord.webhookUrl);
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
     }
 
     public void send(String json) {
-        plugin.getProxy().getScheduler().runAsync(plugin, () -> {
-            try {
-                HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
-                connection.setRequestMethod("POST");
-                connection.addRequestProperty("Content-Type", "application/json");
-                connection.setDoOutput(true);
+        // Removed asynchronous run on Velocity
+        //plugin.getProxy().getScheduler().runAsync(plugin, () -> {
+        try {
+            HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.addRequestProperty("Content-Type", "application/json");
+            connection.setDoOutput(true);
 
-                OutputStream stream = connection.getOutputStream();
-                stream.write(json.getBytes(StandardCharsets.UTF_8));
-                stream.flush();
-                stream.close();
+            OutputStream stream = connection.getOutputStream();
+            stream.write(json.getBytes(StandardCharsets.UTF_8));
+            stream.flush();
+            stream.close();
 
-                connection.getInputStream().close();
-                connection.disconnect();
-            } catch (Exception e) {
-                plugin.getLogger().warning("Could not send data to webhook.");
-                e.printStackTrace();
-            }
-        });
+            connection.getInputStream().close();
+            connection.disconnect();
+        } catch (Exception exception) {
+            plugin.getLogger().warn("Could not send data to webhook.");
+            exception.printStackTrace();
+        }
+        //});
     }
 
     public void sendMessage(int embedColor, String playerName, String playerUUID, String punishmentType, String reason, String moderator) {
@@ -67,11 +68,11 @@ public class WebhookManager {
 
         public WebhookEmbed(int embedColor, String playerName, String playerUUID, String punishmentType, String reason, String moderator) {
             this.color = embedColor;
-            description += createLine(plugin.getConfig().getString("discord.strings.player-name"), raw(playerName));
-            description += createLine(plugin.getConfig().getString("discord.strings.player-uuid"), raw(playerUUID));
-            description += createLine(plugin.getConfig().getString("discord.strings.punishment-type"), punishmentType);
-            description += createLine(plugin.getConfig().getString("discord.strings.reason"), reason);
-            description += createLine(plugin.getConfig().getString("discord.strings.moderator"), raw(moderator));
+            description += createLine(plugin.getConfig().discord.strings.playerName, raw(playerName));
+            description += createLine(plugin.getConfig().discord.strings.playerUuid, raw(playerUUID));
+            description += createLine(plugin.getConfig().discord.strings.punishmentType, punishmentType);
+            description += createLine(plugin.getConfig().discord.strings.reason, reason);
+            description += createLine(plugin.getConfig().discord.strings.moderator, raw(moderator));
         }
     }
 

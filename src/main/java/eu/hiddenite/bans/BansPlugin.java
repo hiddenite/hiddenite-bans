@@ -1,22 +1,28 @@
 package eu.hiddenite.bans;
 
-import com.google.gson.Gson;
+import com.google.inject.Inject;
+import com.velocitypowered.api.command.Command;
+import com.velocitypowered.api.command.CommandManager;
+import com.velocitypowered.api.command.CommandMeta;
+import com.velocitypowered.api.event.ResultedEvent;
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.LoginEvent;
+import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
+import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.annotation.DataDirectory;
+import com.velocitypowered.api.proxy.ProxyServer;
 import eu.hiddenite.bans.commands.BanCommand;
 import eu.hiddenite.bans.commands.KickCommand;
 import eu.hiddenite.bans.commands.UnbanCommand;
-import eu.hiddenite.bans.helpers.HttpHelper;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.event.LoginEvent;
-import net.md_5.bungee.api.plugin.Listener;
-import net.md_5.bungee.api.plugin.Plugin;
-import net.md_5.bungee.config.Configuration;
-import net.md_5.bungee.config.ConfigurationProvider;
-import net.md_5.bungee.config.YamlConfiguration;
-import net.md_5.bungee.event.EventHandler;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import org.slf4j.Logger;
+import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -25,42 +31,106 @@ import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.UUID;
 
-public class BansPlugin extends Plugin implements Listener {
+@Plugin(id="hiddenite-bans", name="HiddeniteBans", version="1.1.1", authors={"Hiddenite"})
+public class BansPlugin {
+    private static BansPlugin instance;
+
+    private final ProxyServer proxy;
+    private final Logger logger;
+    private final File dataDirectory;
+
     private Configuration config;
     private DatabaseManager database;
     private WebhookManager webhook;
 
-    public static class ScoreApiResult {
-        public boolean success;
-        public int score;
+    @Inject
+    public BansPlugin(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
+        this.proxy = proxy;
+        this.logger = logger;
+        this.dataDirectory = dataDirectory.toFile();
+
+        instance = this;
     }
 
-    @Override
-    public void onEnable() {
+    @Subscribe
+    public void onProxyInitialization(ProxyInitializeEvent event) {
         if (!loadConfiguration()) {
             return;
         }
 
-        if (config.getBoolean("discord.enabled")) {
+        if (config.discord.enabled) {
             webhook = new WebhookManager(this);
         }
 
-        database = new DatabaseManager(config, getLogger());
+        database = new DatabaseManager(config, logger);
         if (!database.open()) {
-            getLogger().warning("Could not connect to the database. Plugin disabled.");
+            logger.warn("Could not connect to the database. Plugin disabled.");
             return;
         }
 
-        getProxy().getPluginManager().registerListener(this, this);
-
-        getProxy().getPluginManager().registerCommand(this, new KickCommand(this));
-        getProxy().getPluginManager().registerCommand(this, new BanCommand(this));
-        getProxy().getPluginManager().registerCommand(this, new UnbanCommand(this));
+        registerCommands();
     }
 
-    @Override
-    public void onDisable() {
+    @Subscribe
+    public void onProxyShutdown(ProxyShutdownEvent event) {
         database.close();
+    }
+
+    private boolean loadConfiguration() {
+        if (!dataDirectory.exists()) {
+            if (!dataDirectory.mkdir()) {
+                logger.warn("Could not create the configuration folder.");
+                return false;
+            }
+        }
+
+        File file = new File(dataDirectory, "config.yml");
+        if (!file.exists()) {
+            logger.warn("No configuration file found, creating a default one.");
+
+            try (InputStream in = this.getClass().getClassLoader().getResourceAsStream("config.yml")) {
+                Files.copy(in, file.toPath());
+            } catch (IOException exception) {
+                exception.printStackTrace();
+                return false;
+            }
+        }
+
+        YamlConfigurationLoader reader = YamlConfigurationLoader.builder().path(dataDirectory.toPath().resolve("config.yml")).build();
+
+        try {
+            config = reader.load().get(Configuration.class);
+        } catch (IOException exception) {
+            exception.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+
+    private void registerCommands() {
+        registerCommand("ban", new BanCommand(this));
+        registerCommand("unban", new UnbanCommand(this));
+        registerCommand("kick", new KickCommand(this));
+    }
+
+    private void registerCommand(String name, Command command) {
+        CommandManager manager = proxy.getCommandManager();
+
+        CommandMeta meta = manager.metaBuilder(name).plugin(this).build();
+        manager.register(meta, command);
+    }
+
+    public static BansPlugin getInstance() {
+        return instance;
+    }
+
+    public ProxyServer getProxy() {
+        return proxy;
+    }
+
+    public Logger getLogger() {
+        return logger;
     }
 
     public Configuration getConfig() {
@@ -71,52 +141,28 @@ public class BansPlugin extends Plugin implements Listener {
         return webhook;
     }
 
-    private boolean loadConfiguration() {
-        if (!getDataFolder().exists()) {
-            if (!getDataFolder().mkdir()) {
-                getLogger().warning("Could not create the configuration folder.");
-                return false;
-            }
-        }
-
-        File file = new File(getDataFolder(), "config.yml");
-        if (!file.exists()) {
-            getLogger().warning("No configuration file found, creating a default one.");
-
-            try (InputStream in = getResourceAsStream("config.yml")) {
-                Files.copy(in, file.toPath());
-            } catch (IOException e) {
-                e.printStackTrace();
-                return false;
-            }
-        }
-
-        try {
-            config = ConfigurationProvider
-                    .getProvider(YamlConfiguration.class)
-                    .load(new File(getDataFolder(), "config.yml"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        return true;
-    }
-
-    @EventHandler
+    @Subscribe
     public void onPlayerLogin(LoginEvent event) {
         boolean isBanned = false;
         Timestamp expirationDate = null;
         String banReason = null;
         String moderatorName = null;
 
-        UUID playerId = event.getConnection().getUniqueId();
+        UUID playerId = event.getPlayer().getUniqueId();
 
         try {
-            String bansTable = config.getString("mysql.tables.bans");
-            String playersTable = "`" + config.getString("mysql.tables.players") + "`";
-            String playerIdField = playersTable + "." + config.getString("mysql.fields.players.id");
-            String playerNameField =  playersTable + "." + config.getString("mysql.fields.players.name");
+            String bansTable = config.mysql.tables.bans;
+            String playersTable = "`" + config.mysql.tables.players + "`";
+            String playerIdField = playersTable + "." + config.mysql.fields.players.id;
+            String playerNameField =  playersTable + "." + config.mysql.fields.players.name;
+
+            logger.warn("SELECT expiration_date, reason" +
+                    ", " + playerNameField +
+                    " FROM " + bansTable +
+                    " LEFT JOIN " + playersTable +
+                    " ON mod_id = " + playerIdField +
+                    " WHERE player_id = ? AND (expiration_date IS NULL OR expiration_date > NOW())" +
+                    " LIMIT 1");
 
             try (PreparedStatement ps = database.prepareStatement("SELECT expiration_date, reason" +
                     ", " + playerNameField +
@@ -140,35 +186,33 @@ public class BansPlugin extends Plugin implements Listener {
         }
 
         if (isBanned) {
-            getLogger().info("Login from " + event.getConnection().getName() + " rejected: " + banReason);
-            event.setCancelled(true);
-            event.setCancelReason(generateBanMessage(banReason, moderatorName, expirationDate));
-            return;
+            logger.info("Login from " + event.getPlayer().getUsername() + " rejected: " + banReason);
+            event.setResult(ResultedEvent.ComponentResult.denied(generateBanMessage(banReason, moderatorName, expirationDate)));
         }
     }
 
-    public BaseComponent[] generateBanMessage(String reason, String moderatorName, Timestamp expirationDate) {
-        String fullMessage = config.getString("ban-message.header") + "\n\n";
+    public TextComponent generateBanMessage(String reason, String moderatorName, Timestamp expirationDate) {
+        String fullMessage = config.banMessage.header + "\n\n";
         if (expirationDate != null) {
-            fullMessage += config.getString("ban-message.temporary") + "\n\n";
+            fullMessage += config.banMessage.temporary + "\n\n";
         } else {
-            fullMessage += config.getString("ban-message.permanent") + "\n\n";
+            fullMessage += config.banMessage.permanent + "\n\n";
         }
-        fullMessage += config.getString("ban-message.footer");
+        fullMessage += config.banMessage.footer;
 
         fullMessage = fullMessage.replace("{REASON}", reason);
         if (moderatorName != null) {
             fullMessage = fullMessage.replace("{MODERATOR}", moderatorName);
         } else {
-            fullMessage = fullMessage.replace("{MODERATOR}", config.getString("ban-message.console-username"));
+            fullMessage = fullMessage.replace("{MODERATOR}", config.banMessage.consoleUsername);
         }
         if (expirationDate != null) {
-            Format untilDateFormat = new SimpleDateFormat(config.getString("ban-message.until-format"));
+            Format untilDateFormat = new SimpleDateFormat(config.banMessage.untilFormat);
             fullMessage = fullMessage.replace("{UNTIL}", untilDateFormat.format(expirationDate));
             fullMessage = fullMessage.replace("{REMAINING}", generateRemainingTime(expirationDate));
         }
 
-        return TextComponent.fromLegacyText(fullMessage);
+        return Component.text(fullMessage);
     }
 
     private String generateRemainingTime(Timestamp untilDate) {
@@ -184,28 +228,28 @@ public class BansPlugin extends Plugin implements Listener {
         StringBuilder sb = new StringBuilder();
         boolean firstElement = true;
         if (day > 0) {
-            sb.append(day).append(config.getString("ban-message.remaining.day")).append(day > 1 ? "s" : "");
+            sb.append(day).append(config.banMessage.remaining.day).append(day > 1 ? "s" : "");
             firstElement = false;
         }
         if (hour > 0) {
             if (!firstElement) {
-                sb.append(config.getString("ban-message.remaining.separator"));
+                sb.append(config.banMessage.remaining.separator);
             }
-            sb.append(hour).append(config.getString("ban-message.remaining.hour")).append(hour > 1 ? "s" : "");
+            sb.append(hour).append(config.banMessage.remaining.hour).append(hour > 1 ? "s" : "");
             firstElement = false;
         }
         if (min > 0) {
             if (!firstElement) {
-                sb.append(config.getString("ban-message.remaining.separator"));
+                sb.append(config.banMessage.remaining.separator);
             }
-            sb.append(min).append(config.getString("ban-message.remaining.minute")).append(min > 1 ? "s" : "");
+            sb.append(min).append(config.banMessage.remaining.minute).append(min > 1 ? "s" : "");
             firstElement = false;
         }
         if (sec > 0 || (day == 0 && hour == 0 && min == 0)) {
             if (!firstElement) {
-                sb.append(config.getString("ban-message.remaining.last-separator"));
+                sb.append(config.banMessage.remaining.separator);
             }
-            sb.append(sec).append(config.getString("ban-message.remaining.second")).append(sec > 1 ? "s" : "");
+            sb.append(sec).append(config.banMessage.remaining.second).append(sec > 1 ? "s" : "");
         }
 
         return sb.toString();
@@ -214,9 +258,9 @@ public class BansPlugin extends Plugin implements Listener {
     public record OfflinePlayerInfo(UUID uniqueId, String name) {}
 
     public OfflinePlayerInfo getOfflinePlayer(String username) {
-        String playersTable = "`" + config.getString("mysql.tables.players") + "`";
-        String playerIdField = config.getString("mysql.fields.players.id");
-        String playerNameField = config.getString("mysql.fields.players.name");
+        String playersTable = "`" + config.mysql.tables.players + "`";
+        String playerIdField = config.mysql.fields.players.id;
+        String playerNameField = config.mysql.fields.players.name;
 
         try (PreparedStatement ps = database.prepareStatement("SELECT " + playerIdField + ", " + playerNameField +
                 " FROM " + playersTable +
@@ -237,7 +281,7 @@ public class BansPlugin extends Plugin implements Listener {
     }
 
     public boolean isPlayerBanned(UUID playerId) throws SQLException {
-        final String bansTable = config.getString("mysql.tables.bans");
+        final String bansTable = config.mysql.tables.bans;
         try (PreparedStatement ps = database.prepareStatement("SELECT expiration_date, reason" +
                 " FROM " + bansTable +
                 " WHERE player_id = ? AND (expiration_date IS NULL OR expiration_date > NOW())" +
@@ -250,7 +294,7 @@ public class BansPlugin extends Plugin implements Listener {
     }
 
     public void banPlayer(UUID playerId, UUID moderatorId, Timestamp expirationDate, String reason) throws SQLException {
-        final String bansTable = config.getString("mysql.tables.bans");
+        final String bansTable = config.mysql.tables.bans;
         try (PreparedStatement ps = database.prepareStatement("INSERT INTO " + bansTable +
                 " (player_id, mod_id, expiration_date, reason)" +
                 " VALUES (?, ?, ?, ?)")) {
@@ -263,7 +307,7 @@ public class BansPlugin extends Plugin implements Listener {
     }
 
     public void unbanPlayer(UUID playerId) throws SQLException {
-        final String bansTable = config.getString("mysql.tables.bans");
+        final String bansTable = config.mysql.tables.bans;
         try (PreparedStatement ps = database.prepareStatement("UPDATE " + bansTable +
                 " SET expiration_date = NOW()" +
                 " WHERE player_id = ? AND (expiration_date IS NULL OR expiration_date > NOW())")) {
