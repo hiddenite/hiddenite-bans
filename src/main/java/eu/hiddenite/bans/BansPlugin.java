@@ -181,7 +181,7 @@ public class BansPlugin {
         }
 
         if (this.proxyCheck.checkPlayer(event.getPlayer())) {
-            event.setResult(ResultedEvent.ComponentResult.denied(Component.text("Les VPN ne sont pas autorisés sur le serveur.\nRejoignez le discord pour demander une exception.")));
+            event.setResult(ResultedEvent.ComponentResult.denied(Component.text(config.proxyCheck.rejectMessage)));
             return;
         }
 

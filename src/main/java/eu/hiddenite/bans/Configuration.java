@@ -118,5 +118,6 @@ public class Configuration {
     public static class ProxyCheck {
         public boolean enabled;
         public String apiKey;
+        public String rejectMessage;
     }
 }

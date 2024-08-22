@@ -65,3 +65,4 @@ discord:
 proxy-check:
   enabled: false
   api-key: "..."
+  reject-message: "VPNs are not allowed on this server."
