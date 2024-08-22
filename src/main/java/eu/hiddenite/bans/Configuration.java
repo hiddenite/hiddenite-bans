@@ -9,6 +9,7 @@ public class Configuration {
     public CommandMessages commandMessages;
     public DefaultReasons defaultReasons;
     public Discord discord;
+    public ProxyCheck proxyCheck;
 
     @ConfigSerializable
     public static class MySQL {
@@ -111,5 +112,11 @@ public class Configuration {
             public String reason;
             public String moderator;
         }
+    }
+
+    @ConfigSerializable
+    public static class ProxyCheck {
+        public boolean enabled;
+        public String apiKey;
     }
 }

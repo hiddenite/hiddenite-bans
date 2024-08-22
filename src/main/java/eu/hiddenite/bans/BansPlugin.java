@@ -42,6 +42,7 @@ public class BansPlugin {
     private Configuration config;
     private DatabaseManager database;
     private WebhookManager webhook;
+    private ProxyCheckManager proxyCheck;
 
     @Inject
     public BansPlugin(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
@@ -67,6 +68,8 @@ public class BansPlugin {
             logger.warn("Could not connect to the database. Plugin disabled.");
             return;
         }
+
+        this.proxyCheck = new ProxyCheckManager(this);
 
         registerCommands();
     }
@@ -175,6 +178,11 @@ public class BansPlugin {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+
+        if (this.proxyCheck.checkPlayer(event.getPlayer())) {
+            event.setResult(ResultedEvent.ComponentResult.denied(Component.text("Les VPN ne sont pas autorisés sur le serveur.\nRejoignez le discord pour demander une exception.")));
+            return;
         }
 
         if (isBanned) {

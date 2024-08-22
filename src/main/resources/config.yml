@@ -62,3 +62,6 @@ discord:
     punishment-type: "Punishment:"
     reason: "Reason:"
     moderator: "Moderator:"
+proxy-check:
+  enabled: false
+  api-key: "..."
